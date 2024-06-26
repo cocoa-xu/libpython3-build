@@ -6,15 +6,8 @@ PYTHON3_VERSION=$1
 HOST_TRIPLET=$2
 
 export DEBIAN_FRONTEND=noninteractive
-case "${HOST_TRIPLET}" in
-  riscv64-linux-*)
-    apt-get update
-    apt-get install -y --no-install-recommends curl gcc g++ git build-essential ca-certificates gettext xz-utils zlib1g-dev libssl-dev libffi-dev liblzma-dev libreadline-dev libbz2-dev libncurses-dev
-    ;;
-  *)
-    yum install -y curl gcc gcc-c++ git make gettext xz zlib-devel openssl-devel libffi-devel readline-devel bzip2 bzip2-devel ncurses-devel xz-devel
-    ;;
-esac
+apt-get update
+apt-get install -y --no-install-recommends curl gcc g++ git build-essential ca-certificates gettext xz-utils zlib1g-dev libssl-dev libffi-dev liblzma-dev libreadline-dev libbz2-dev libncurses-dev libgdbm-dev libsqlite3-dev pkg-config
 
 rm -rf /work/build
 mkdir -p /work/build

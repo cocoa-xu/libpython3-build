@@ -44,14 +44,10 @@ jobs:
           export HOST_ARCH="${{ matrix.arch }}"
           export HOST_ABI=gnu
           export DOCKER_PLATFORM="linux/${HOST_ARCH}"
-          if [ "${HOST_ARCH}" = "riscv64" ]; then
-            export DOCKER_IMAGE="riscv64/ubuntu:22.04"
-          else
-            if [ "${HOST_ARCH}" = "i686" ]; then
-              export DOCKER_PLATFORM="linux/386"
-            fi
-            export DOCKER_IMAGE="quay.io/pypa/manylinux2014_${HOST_ARCH}:latest"
+          if [ "${HOST_ARCH}" = "i686" ]; then
+            export DOCKER_PLATFORM="linux/386"
           fi
+          export DOCKER_IMAGE="ubuntu:20.04"
           cp .github/scripts/*.sh ./
           bash ./stage1.sh "${PYTHON3_VERSION}" "${HOST_ARCH}" "${HOST_ABI}" "${DOCKER_IMAGE}" "${DOCKER_PLATFORM}"
 
