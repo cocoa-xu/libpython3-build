@@ -12,7 +12,7 @@ case "${HOST_TRIPLET}" in
     apt-get install -y --no-install-recommends curl gcc g++ git build-essential ca-certificates gettext xz-utils zlib1g-dev libssl-dev libffi-dev liblzma-dev libreadline-dev libbz2-dev libncurses-dev
     ;;
   *)
-    yum install -y curl gcc gcc-c++ git make gettext xz zlib-devel openssl-devel libffi-devel lzma-devel readline-devel bzip2 bzip2-devel ncurses-devel xz-devel
+    yum install -y curl gcc gcc-c++ git make gettext xz zlib-devel openssl-devel libffi-devel readline-devel bzip2 bzip2-devel ncurses-devel xz-devel
     ;;
 esac
 
