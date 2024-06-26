@@ -1,0 +1,38 @@
+name: auto-update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * *"
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.AUTO_UPDATE_TOKEN }}
+
+      - name: Get latest version
+        id: libpython3-version
+        run: |
+            pip3 install -U lastversion
+            PYTHON3_VERSION=$(lastversion -b 3 python)
+            echo "Latest Python3 version is $PYTHON3_VERSION"
+            echo "tag=v${PYTHON3_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        uses: mukunku/tag-exists-action@v1.5.0
+        id: check-tag
+        with: 
+          tag: ${{ steps.libpython3-version.outputs.tag }}
+          repo: 'cocoa-xu/libpython3-build'
+      
+      - name: Update if tag not exists
+        if: steps.check-tag.outputs.exists == 'false'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag ${{ steps.libpython3-version.outputs.tag }}
+          git push origin ${{ steps.libpython3-version.outputs.tag }}

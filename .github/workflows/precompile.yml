@@ -1,0 +1,109 @@
+name: precompile
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, i686, aarch64, ppc64le, s390x, riscv64]
+    name: ${{ matrix.arch }}-linux-gnu
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pull docker image
+        run: |
+          if [ "${{ matrix.arch }}" = "riscv64" ]; then
+            sudo docker pull --platform=linux/${{ matrix.arch }} riscv64/ubuntu:22.04
+          else
+            sudo docker pull quay.io/pypa/manylinux2014_${{ matrix.arch }}:latest
+          fi
+
+      - name: Install binfmt
+        run: |
+          sudo apt update
+          sudo apt install -y binfmt-support qemu-user-static
+
+      - name: Compile in Docker
+        run: |
+          export PYTHON3_VERSION=${GITHUB_REF##*/v}
+          export HOST_ARCH="${{ matrix.arch }}"
+          export HOST_ABI=gnu
+          if [ "${HOST_ARCH}" = "riscv64" ]; then
+            export DOCKER_IMAGE="riscv64/ubuntu:22.04"
+          else
+            export DOCKER_IMAGE="quay.io/pypa/manylinux2014_${HOST_ARCH}:latest"
+          fi
+          cp .github/scripts/*.sh ./
+          bash ./stage1.sh "${PYTHON3_VERSION}" "${HOST_ARCH}" "${HOST_ABI}" "${DOCKER_IMAGE}"
+
+      - name: Upload artifacts
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            build/libpython3-*.tar.gz
+            build/libpython3-*.tar.gz.sha256
+
+  macos:
+    runs-on: ${{ matrix.jobs.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        jobs:
+          - { os: macos-12, triplet: x86_64-apple-darwin }
+          - { os: macos-14, triplet: aarch64-apple-darwin }
+    env:
+      XZ_OPT: "-e -T0 -9"
+    name: ${{ matrix.jobs.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compile libpython3
+        run: |
+          export PYTHON3_VERSION=${GITHUB_REF##*/v}
+          export HOST_TRIPLET="${{ matrix.jobs.triplet }}"
+          export ROOTDIR="$(pwd)"
+          export CACHEDIR="${ROOTDIR}/cache"
+          export PYTHON3_SOURCE_DIR="${CACHE_DIR}/Python-${PYTHON3_VERSION}"
+          export DESTDIR="${ROOTDIR}/python3"
+          rm -rf "${DESTDIR}"
+          mkdir -p "${DESTDIR}"
+          mkdir -p "${CACHEDIR}"
+          
+          curl -fSL "https://www.python.org/ftp/python/$(PYTHON3_VERSION)/Python-$(PYTHON3_VERSION).tgz" -o "Python-$(PYTHON3_VERSION).tgz"
+          tar -xzf "Python-$(PYTHON3_VERSION).tgz" -C "${CACHEDIR}"
+          cd "${PYTHON3_SOURCE_DIR}"
+          CPP=cpp ./configure --prefix=/ --enable-optimizations --with-lto=full --enable-shared=yes --with-static-libpython=no
+          make -j$(sysctl -n hw.ncpu)
+          make DESTDIR="${DESTDIR}" install
+
+          cd "${DESTDIR}"
+          tar -czf "${ROOTDIR}/libpython3-${HOST_TRIPLET}.tar.gz" .
+          rm -rf "${DESTDIR}"
+          cd "${ROOTDIR}"
+          sha256sum libpython3-${HOST_TRIPLET}.tar.gz | tee libpython3-${HOST_TRIPLET}.tar.gz.sha256
+
+      - name: Upload artifacts
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            libpython3-${{ matrix.jobs.triplet }}.tar.gz
+            libpython3-${{ matrix.jobs.triplet }}.tar.gz.sha256
