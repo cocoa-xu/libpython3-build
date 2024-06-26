@@ -43,13 +43,17 @@ jobs:
           export PYTHON3_VERSION=${GITHUB_REF##*/v}
           export HOST_ARCH="${{ matrix.arch }}"
           export HOST_ABI=gnu
+          export DOCKER_PLATFORM="linux/${HOST_ARCH}"
           if [ "${HOST_ARCH}" = "riscv64" ]; then
             export DOCKER_IMAGE="riscv64/ubuntu:22.04"
           else
+            if [ "${HOST_ARCH}" = "i686" ]; then
+              export DOCKER_PLATFORM="linux/386"
+            fi
             export DOCKER_IMAGE="quay.io/pypa/manylinux2014_${HOST_ARCH}:latest"
           fi
           cp .github/scripts/*.sh ./
-          bash ./stage1.sh "${PYTHON3_VERSION}" "${HOST_ARCH}" "${HOST_ABI}" "${DOCKER_IMAGE}"
+          bash ./stage1.sh "${PYTHON3_VERSION}" "${HOST_ARCH}" "${HOST_ABI}" "${DOCKER_IMAGE}" "${DOCKER_PLATFORM}"
 
       - name: Upload artifacts
         uses: softprops/action-gh-release@v1
@@ -87,8 +91,8 @@ jobs:
           mkdir -p "${DESTDIR}"
           mkdir -p "${CACHEDIR}"
           
-          curl -fSL "https://www.python.org/ftp/python/$(PYTHON3_VERSION)/Python-$(PYTHON3_VERSION).tgz" -o "Python-$(PYTHON3_VERSION).tgz"
-          tar -xzf "Python-$(PYTHON3_VERSION).tgz" -C "${CACHEDIR}"
+          curl -fSL "https://www.python.org/ftp/python/${PYTHON3_VERSION}/Python-${PYTHON3_VERSION}.tgz" -o "Python-${PYTHON3_VERSION}.tgz"
+          tar -xzf "Python-${PYTHON3_VERSION}.tgz" -C "${CACHEDIR}"
           cd "${PYTHON3_SOURCE_DIR}"
           CPP=cpp ./configure --prefix=/ --enable-optimizations --with-lto=full --enable-shared=yes --with-static-libpython=no
           make -j$(sysctl -n hw.ncpu)
