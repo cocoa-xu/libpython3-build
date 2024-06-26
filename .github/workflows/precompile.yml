@@ -102,7 +102,7 @@ jobs:
           tar -czf "${ROOTDIR}/libpython3-${HOST_TRIPLET}.tar.gz" .
           rm -rf "${DESTDIR}"
           cd "${ROOTDIR}"
-          sha256sum libpython3-${HOST_TRIPLET}.tar.gz | tee libpython3-${HOST_TRIPLET}.tar.gz.sha256
+          shasum -a 256 libpython3-${HOST_TRIPLET}.tar.gz | tee libpython3-${HOST_TRIPLET}.tar.gz.sha256
 
       - name: Upload artifacts
         uses: softprops/action-gh-release@v1
