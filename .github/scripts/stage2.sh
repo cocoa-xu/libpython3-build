@@ -26,7 +26,7 @@ mkdir -p "${DESTDIR}"
 
 cd "${CURRENT_DIR}"
 cd "Python-${PYTHON3_VERSION}"
-./configure --prefix=/ --enable-optimizations --with-lto=full --enable-shared=yes --with-static-libpython=no
+./configure --prefix=/usr/local --enable-optimizations --with-lto=full --enable-shared=yes --with-static-libpython=no
 make -j$(nproc)
 make DESTDIR="${DESTDIR}" install
 
