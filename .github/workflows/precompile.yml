@@ -96,11 +96,14 @@ jobs:
 
           curl -fSL "https://github.com/cocoa-xu/openssl-build/releases/download/v${OPENSSL_VERSION}/openssl-${OPENSSL_TRIPLET}.tar.gz" -o "openssl-${OPENSSL_TRIPLET}.tar.gz"
           tar -xzf "openssl-${OPENSSL_TRIPLET}.tar.gz" -C "${CACHE_DIR_OPENSSL}"
-          rm -f "${CACHE_DIR_OPENSSL}/lib/*.dylib"
+          rm -f "${CACHE_DIR_OPENSSL}/lib/"*.dylib
 
           curl -fSL "https://www.python.org/ftp/python/${PYTHON3_VERSION}/Python-${PYTHON3_VERSION}.tgz" -o "Python-${PYTHON3_VERSION}.tgz"
           tar -xzf "Python-${PYTHON3_VERSION}.tgz" -C "${CACHE_DIR}"
           cd "${PYTHON3_SOURCE_DIR}"
+          
+          export LDFLAGS="-L$(brew --prefix)/lib"
+          export CPPFLAGS="-I$(brew --prefix)/include"
           CPP=cpp ./configure --prefix=/ --enable-optimizations --with-lto=full --enable-shared=yes --with-openssl="${CACHE_DIR_OPENSSL}" --with-static-libpython=no
           make -j$(sysctl -n hw.ncpu)
           make DESTDIR="${DESTDIR}" install
