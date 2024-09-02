@@ -104,7 +104,7 @@ jobs:
           
           export LDFLAGS="-L$(brew --prefix)/lib"
           export CPPFLAGS="-I$(brew --prefix)/include"
-          CPP=cpp ./configure --prefix=/ --enable-optimizations --with-lto=full --enable-shared=yes --with-openssl="${CACHE_DIR_OPENSSL}" --with-static-libpython=no
+          CPP=cpp ./configure --prefix=/usr/local --enable-optimizations --with-lto=full --enable-shared=yes --with-openssl="${CACHE_DIR_OPENSSL}" --with-static-libpython=no
           make -j$(sysctl -n hw.ncpu)
           make DESTDIR="${DESTDIR}" install
 
