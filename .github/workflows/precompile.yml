@@ -69,10 +69,11 @@ jobs:
       fail-fast: false
       matrix:
         jobs:
-          - { os: macos-12, triplet: x86_64-apple-darwin }
-          - { os: macos-14, triplet: aarch64-apple-darwin }
+          - { os: macos-12, triplet: x86_64-apple-darwin, openssl_triplet: x86_64-apple-darwin }
+          - { os: macos-14, triplet: aarch64-apple-darwin, openssl_triplet: arm64-apple-darwin }
     env:
       XZ_OPT: "-e -T0 -9"
+      OPENSSL_VERSION: "3.3.1"
     name: ${{ matrix.jobs.os }}
 
     steps:
@@ -83,18 +84,24 @@ jobs:
         run: |
           export PYTHON3_VERSION=${GITHUB_REF##*/v}
           export HOST_TRIPLET="${{ matrix.jobs.triplet }}"
+          export OPENSSL_TRIPLET="${{ matrix.jobs.openssl_triplet }}"
           export ROOTDIR="$(pwd)"
           export CACHE_DIR="${ROOTDIR}/cache"
+          export CACHE_DIR_OPENSSL="${ROOTDIR}/cache/openssl-${OPENSSL_VERSION}"
           export PYTHON3_SOURCE_DIR="${CACHE_DIR}/Python-${PYTHON3_VERSION}"
           export DESTDIR="${ROOTDIR}/python3"
           rm -rf "${DESTDIR}"
           mkdir -p "${DESTDIR}"
-          mkdir -p "${CACHE_DIR}"
-          
+          mkdir -p "${CACHE_DIR_OPENSSL}"
+
+          curl -fSL "https://github.com/cocoa-xu/openssl-build/releases/download/v${OPENSSL_VERSION}/openssl-${OPENSSL_TRIPLET}.tar.gz" -o "openssl-${OPENSSL_TRIPLET}.tar.gz"
+          tar -xzf "openssl-${OPENSSL_TRIPLET}.tar.gz" -C "${CACHE_DIR_OPENSSL}"
+          rm -f "${CACHE_DIR_OPENSSL}/lib/*.dylib"
+
           curl -fSL "https://www.python.org/ftp/python/${PYTHON3_VERSION}/Python-${PYTHON3_VERSION}.tgz" -o "Python-${PYTHON3_VERSION}.tgz"
           tar -xzf "Python-${PYTHON3_VERSION}.tgz" -C "${CACHE_DIR}"
           cd "${PYTHON3_SOURCE_DIR}"
-          CPP=cpp ./configure --prefix=/ --enable-optimizations --with-lto=full --enable-shared=yes --with-static-libpython=no
+          CPP=cpp ./configure --prefix=/ --enable-optimizations --with-lto=full --enable-shared=yes --with-openssl="${CACHE_DIR_OPENSSL}" --with-static-libpython=no
           make -j$(sysctl -n hw.ncpu)
           make DESTDIR="${DESTDIR}" install
 
